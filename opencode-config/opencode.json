@@ -1,0 +1,41 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  "_comment": "AgentBoard — config de automação. Coloque este arquivo na raiz de cada workspace/repo.",
+
+  "permission": "allow",
+
+  "agent": {
+    "validate-pbi": {
+      "description": "Valida se um PBI atende ao Definition of Readiness (DOR). Verifica critérios de aceite, valor de negócio, stakeholder e prioridade. Retorna SUMMARY: com resultado.",
+      "mode": "primary",
+      "model": "github/copilot",
+      "permission": {
+        "bash":     { "*": "allow", "git *": "allow" },
+        "edit":     "deny",
+        "webfetch": "allow"
+      },
+      "steps": 20
+    },
+
+    "generate-spec": {
+      "description": "Gera especificação técnica completa para um PBI aprovado. Lê o registro de arquitetura, identifica repositórios e workspaces impactados e cria tasks filhas no ADO. Retorna SUMMARY: com número de tasks geradas.",
+      "mode": "primary",
+      "model": "github/copilot",
+      "permission": {
+        "bash": { "*": "allow", "git *": "allow", "grep *": "allow" },
+        "edit": "allow",
+        "read": "allow"
+      },
+      "steps": 40
+    },
+
+    "develop": {
+      "description": "Implementa uma task de desenvolvimento: cria branch, implementa as mudanças conforme spec técnica, escreve testes e abre PR linkado ao work item. Retorna SUMMARY: com link do PR criado.",
+      "mode": "primary",
+      "model": "github/copilot",
+      "permission": "allow",
+      "steps": 80
+    }
+  }
+}

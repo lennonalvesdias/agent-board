@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentBoard v2 — Dashboard</title>
+<style>
+  :root {
+    --bg:      #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --border:  #30363d; --text: #e6edf3; --muted: #8b949e;
+    --blue:    #58a6ff; --green: #3fb950; --yellow: #d29922;
+    --red:     #f85149; --purple: #a5d6ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; }
+
+  header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .logo { font-size: 18px; font-weight: 700; color: var(--blue); }
+  .logo span { color: var(--muted); font-weight: 400; font-size: 13px; margin-left: 10px; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .badge { background: var(--bg3); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12px; }
+
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .dot-green  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot-red    { background: var(--red); }
+  .dot-yellow { background: var(--yellow); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+  .grid-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .stat-label { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 700; }
+
+  .section-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
+
+  .kanban { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 32px; overflow-x: auto; }
+  .kanban-col { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; min-width: 180px; }
+  .col-header { font-weight: 600; font-size: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .col-count  { background: var(--bg3); border-radius: 10px; padding: 1px 7px; font-size: 11px; color: var(--muted); }
+
+  .pbi-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-bottom: 8px; cursor: pointer; transition: border-color .2s; }
+  .pbi-card:hover { border-color: var(--blue); }
+  .pbi-card.running { border-color: var(--blue); }
+  .pbi-card.blocked { border-color: var(--red); }
+  .pbi-card-id    { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .pbi-card-title { font-size: 12px; line-height: 1.4; }
+  .pbi-card-agent { font-size: 11px; color: var(--blue); margin-top: 6px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .panel   { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .log-list { list-style: none; max-height: 280px; overflow-y: auto; }
+  .log-item { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .log-time  { color: var(--muted); white-space: nowrap; }
+  .log-type  { border-radius: 4px; padding: 1px 6px; font-size: 10px; white-space: nowrap; }
+  .log-start { background: #1c3553; color: var(--blue); }
+  .log-ok    { background: #1a3328; color: var(--green); }
+  .log-err   { background: #3d1e1e; color: var(--red); }
+  .log-info  { background: var(--bg3); color: var(--muted); }
+  .log-msg   { color: var(--text); }
+
+  .server-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 24px; }
+  .server-row   { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .server-row:last-child { border-bottom: none; }
+  .server-label { color: var(--muted); }
+  .server-val   { font-family: monospace; }
+
+  .next-cycle   { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .countdown    { font-size: 24px; font-weight: 700; color: var(--blue); font-variant-numeric: tabular-nums; }
+  .btn          { background: var(--blue); color: #000; border: none; border-radius: 6px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn:hover    { opacity: .85; }
+  .btn-sm       { padding: 4px 10px; font-size: 11px; }
+  .btn-red      { background: var(--red); color: #fff; }
+
+  .tag-pm  { color: var(--yellow); }
+  .tag-tl  { color: var(--purple); }
+  .tag-dev { color: var(--green); }
+
+  #modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; align-items: center; justify-content: center; }
+  #modal-backdrop.open { display: flex; }
+  #modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 24px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; }
+  #modal h3 { font-size: 16px; margin-bottom: 16px; }
+  .modal-close { float: right; cursor: pointer; color: var(--muted); font-size: 18px; }
+  pre { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 11px; overflow-x: auto; white-space: pre-wrap; line-height: 1.6; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  td, th { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+  th { color: var(--muted); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">AgentBoard <span>v2 — OpenCode SDK</span></div>
+  <div class="header-right">
+    <div class="badge" id="server-badge">
+      <span class="status-dot dot-yellow"></span> Verificando...
+    </div>
+    <div class="badge" id="cycle-badge">Ciclo: —</div>
+  </div>
+</header>
+
+<main>
+  <!-- Stats -->
+  <div class="grid-top">
+    <div class="stat-card"><div class="stat-label">PBIs Ativos</div><div class="stat-value" id="stat-active">—</div></div>
+    <div class="stat-card"><div class="stat-label">Concluídos Hoje</div><div class="stat-value" id="stat-done">—</div></div>
+    <div class="stat-card"><div class="stat-label">Bloqueados</div><div class="stat-value" id="stat-blocked" style="color:var(--red)">—</div></div>
+    <div class="stat-card"><div class="stat-label">Agentes Rodando</div><div class="stat-value" id="stat-running" style="color:var(--blue)">—</div></div>
+    <div class="stat-card"><div class="stat-label">Sessões OpenCode</div><div class="stat-value" id="stat-sessions">—</div></div>
+  </div>
+
+  <!-- opencode serve status -->
+  <div class="section-title">OpenCode Server</div>
+  <div class="server-panel">
+    <div class="server-row">
+      <span class="server-label">Status</span>
+      <span class="server-val" id="srv-status">—</span>
+    </div>
+    <div class="server-row">
+      <span class="server-label">Versão</span>
+      <span class="server-val" id="srv-version">—</span>
+    </div>
+    <div class="server-row">
+      <span class="server-label">Endpoint</span>
+      <span class="server-val" id="srv-url">—</span>
+    </div>
+    <div class="server-row">
+      <span class="server-label">Sessões abertas</span>
+      <span class="server-val" id="srv-sessions">—</span>
+    </div>
+  </div>
+
+  <!-- Próximo ciclo -->
+  <div class="next-cycle">
+    <div>
+      <div class="section-title" style="margin:0 0 4px">Próximo Ciclo de Polling</div>
+      <div class="countdown" id="countdown">00:05:00</div>
+    </div>
+    <button class="btn" onclick="forceRefresh()">↺ Atualizar Agora</button>
+  </div>
+
+  <!-- Kanban -->
+  <div class="section-title">Board ADO</div>
+  <div class="kanban" id="kanban">
+    <!-- gerado via JS -->
+  </div>
+
+  <!-- Logs + Bloqueios -->
+  <div class="two-col">
+    <div class="panel">
+      <div class="section-title">Log de Eventos</div>
+      <ul class="log-list" id="log-list"></ul>
+    </div>
+    <div class="panel">
+      <div class="section-title">Sessões OpenCode Ativas</div>
+      <div id="sessions-table">—</div>
+    </div>
+  </div>
+</main>
+
+<!-- Modal -->
+<div id="modal-backdrop">
+  <div id="modal">
+    <span class="modal-close" onclick="closeModal()">✕</span>
+    <h3 id="modal-title">—</h3>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ── Configuração ──────────────────────────────────────────────────────
+const OPENCODE_PORT    = 4096;
+const OPENCODE_BASE    = `http://127.0.0.1:${OPENCODE_PORT}`;
+const POLLING_INTERVAL = 5 * 60; // segundos
+let timeLeft = POLLING_INTERVAL;
+let eventsLog = [];
+
+// ── Estado mock para demo (substitua pela leitura real do .agentboard-state.json) ──
+const DEMO_BOARD = {
+  "Novo":               [{ id: 1301, title: "Botão de compartilhamento no live", agent: null, status: "waiting" }],
+  "Aprovado":           [{ id: 1298, title: "Filtro por categoria no feed", agent: "PM Agent", status: "running" }],
+  "Refinado":           [{ id: 1295, title: "Sistema de notificações push", agent: "TechLead Agent", status: "running" },
+                         { id: 1289, title: "Dashboard de vendedor", agent: null, status: "waiting" }],
+  "Em Desenvolvimento": [{ id: 1280, title: "Checkout via Pix", agent: "Dev Agent", status: "running" },
+                         { id: 1271, title: "Rate limiting por IP", agent: null, status: "blocked" }],
+  "Homologação":        [{ id: 1265, title: "Carrinho de live shopping", agent: null, status: "done" }],
+  "Deploy":             [{ id: 1250, title: "Login com Instagram", agent: null, status: "done" }],
+};
+
+// ── Fetch do opencode serve ────────────────────────────────────────────
+async function fetchOpenCodeHealth() {
+  try {
+    const r = await fetch(`${OPENCODE_BASE}/global/health`, { signal: AbortSignal.timeout(3000) });
+    if (!r.ok) throw new Error(`${r.status}`);
+    return await r.json();
+  } catch { return null; }
+}
+
+async function fetchOpenCodeSessions() {
+  try {
+    const r = await fetch(`${OPENCODE_BASE}/session`, { signal: AbortSignal.timeout(3000) });
+    if (!r.ok) throw new Error();
+    return await r.json();
+  } catch { return []; }
+}
+
+// ── Render ─────────────────────────────────────────────────────────────
+async function refresh() {
+  // Saúde do servidor
+  const health   = await fetchOpenCodeHealth();
+  const sessions = await fetchOpenCodeSessions();
+
+  const serverBadge = document.getElementById("server-badge");
+  if (health?.healthy) {
+    serverBadge.innerHTML = `<span class="status-dot dot-green"></span> opencode serve OK`;
+    document.getElementById("srv-status").innerHTML  = `<span style="color:var(--green)">✓ Online</span>`;
+    document.getElementById("srv-version").textContent = health.version ?? "—";
+    document.getElementById("srv-url").textContent     = OPENCODE_BASE;
+    document.getElementById("srv-sessions").textContent = Array.isArray(sessions) ? sessions.length : "—";
+    document.getElementById("stat-sessions").textContent = Array.isArray(sessions) ? sessions.length : "—";
+  } else {
+    serverBadge.innerHTML = `<span class="status-dot dot-red"></span> opencode serve offline`;
+    document.getElementById("srv-status").innerHTML = `<span style="color:var(--red)">✕ Offline — rode: opencode serve</span>`;
+    document.getElementById("srv-version").textContent   = "—";
+    document.getElementById("srv-sessions").textContent  = "—";
+    document.getElementById("stat-sessions").textContent = "—";
+  }
+
+  renderSessionsTable(Array.isArray(sessions) ? sessions : []);
+  renderKanban();
+  renderStats();
+  renderLog();
+
+  document.getElementById("cycle-badge").textContent = `Ciclo: ${new Date().toLocaleTimeString("pt-BR")}`;
+}
+
+function renderKanban() {
+  const container = document.getElementById("kanban");
+  container.innerHTML = "";
+  const stateColors = {
+    "Novo": "var(--muted)", "Aprovado": "var(--yellow)", "Refinado": "var(--blue)",
+    "Em Desenvolvimento": "var(--green)", "Homologação": "var(--purple)", "Deploy": "#3fb950"
+  };
+  for (const [state, pbis] of Object.entries(DEMO_BOARD)) {
+    const col = document.createElement("div");
+    col.className = "kanban-col";
+    col.innerHTML = `
+      <div class="col-header">
+        <span style="color:${stateColors[state] ?? "var(--text)"}">${state}</span>
+        <span class="col-count">${pbis.length}</span>
+      </div>
+      ${pbis.map(p => `
+        <div class="pbi-card ${p.status === "running" ? "running" : p.status === "blocked" ? "blocked" : ""}"
+             onclick="showPBI(${p.id}, '${escHtml(p.title)}', '${p.status}', '${p.agent ?? ""}')">
+          <div class="pbi-card-id">#${p.id}</div>
+          <div class="pbi-card-title">${escHtml(p.title)}</div>
+          ${p.agent ? `<div class="pbi-card-agent">${p.status === "running" ? "⟳ " : ""}${p.agent}</div>` : ""}
+          ${p.status === "blocked" ? `<div style="color:var(--red);font-size:11px;margin-top:4px">🔴 Bloqueado</div>` : ""}
+        </div>`).join("")}
+    `;
+    container.appendChild(col);
+  }
+}
+
+function renderStats() {
+  const all     = Object.values(DEMO_BOARD).flat();
+  const running = all.filter(p => p.status === "running").length;
+  const blocked = all.filter(p => p.status === "blocked").length;
+  const done    = (DEMO_BOARD["Deploy"] ?? []).length;
+  const active  = all.filter(p => !["done"].includes(p.status)).length;
+  document.getElementById("stat-active").textContent  = active;
+  document.getElementById("stat-done").textContent    = done;
+  document.getElementById("stat-blocked").textContent = blocked;
+  document.getElementById("stat-running").textContent = running;
+}
+
+function renderSessionsTable(sessions) {
+  const el = document.getElementById("sessions-table");
+  if (!sessions.length) { el.innerHTML = `<span style="color:var(--muted);font-size:12px">Nenhuma sessão ativa.</span>`; return; }
+  el.innerHTML = `<table>
+    <tr><th>ID</th><th>Título</th></tr>
+    ${sessions.slice(0, 10).map(s => `
+    <tr>
+      <td style="font-family:monospace;color:var(--muted)">${(s.id ?? "").slice(0,8)}</td>
+      <td>${escHtml((s.title ?? "sem título").slice(0, 60))}</td>
+    </tr>`).join("")}
+  </table>`;
+}
+
+function renderLog() {
+  if (!eventsLog.length) {
+    eventsLog = [
+      { time: "14:32:15", type: "start", msg: "Agente validate-pbi iniciado para #1298" },
+      { time: "14:35:02", type: "ok",    msg: "PBI #1295 transicionado para Refinado" },
+      { time: "14:35:05", type: "start", msg: "Agente generate-spec iniciado para #1295" },
+      { time: "14:36:44", type: "info",  msg: "Pergunta do agente resolvida via LLM (PBI #1295)" },
+      { time: "14:41:18", type: "ok",    msg: "3 tasks criadas para PBI #1295" },
+      { time: "14:41:20", type: "start", msg: "Agente develop iniciado para task #1295-1" },
+    ];
+  }
+  const ul = document.getElementById("log-list");
+  ul.innerHTML = [...eventsLog].reverse().map(e => `
+    <li class="log-item">
+      <span class="log-time">${e.time}</span>
+      <span class="log-type log-${e.type}">${e.type.toUpperCase()}</span>
+      <span class="log-msg">${escHtml(e.msg)}</span>
+    </li>`).join("");
+}
+
+// ── Modal ──────────────────────────────────────────────────────────────
+function showPBI(id, title, status, agent) {
+  document.getElementById("modal-title").textContent = `#${id} — ${title}`;
+  document.getElementById("modal-body").innerHTML = `
+    <table style="margin-bottom:12px">
+      <tr><td style="color:var(--muted)">Estado</td><td>${currentState(id)}</td></tr>
+      <tr><td style="color:var(--muted)">Status</td><td>${status}</td></tr>
+      <tr><td style="color:var(--muted)">Agente</td><td>${agent || "—"}</td></tr>
+    </table>
+    <div style="color:var(--muted);font-size:12px;margin-bottom:8px">Último output do agente:</div>
+    <pre>Nenhum output disponível ainda.\n\nPara conectar o log real, sirva o dashboard com\num servidor HTTP e exponha GET /api/state.</pre>
+  `;
+  document.getElementById("modal-backdrop").classList.add("open");
+}
+function closeModal() { document.getElementById("modal-backdrop").classList.remove("open"); }
+function currentState(id) {
+  for (const [s, ps] of Object.entries(DEMO_BOARD)) {
+    if (ps.find(p => p.id === id)) return s;
+  }
+  return "—";
+}
+
+// ── Countdown ──────────────────────────────────────────────────────────
+function updateCountdown() {
+  timeLeft = Math.max(0, timeLeft - 1);
+  const m = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+  const s = String(timeLeft % 60).padStart(2, "0");
+  document.getElementById("countdown").textContent = `00:${m}:${s}`;
+  if (timeLeft === 0) { timeLeft = POLLING_INTERVAL; refresh(); }
+}
+function forceRefresh() { timeLeft = POLLING_INTERVAL; refresh(); }
+
+// ── Escape ─────────────────────────────────────────────────────────────
+function escHtml(s) { return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+// ── Inicialização ──────────────────────────────────────────────────────
+refresh();
+setInterval(updateCountdown, 1000);
+setInterval(refresh, 30_000); // refresh stats a cada 30s
+</script>
+</body>
+</html>
